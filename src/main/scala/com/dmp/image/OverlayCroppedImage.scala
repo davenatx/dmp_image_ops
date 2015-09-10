@@ -7,6 +7,8 @@ import java.awt.Color
 import com.typesafe.scalalogging.LazyLogging
 import com.typesafe.config._
 
+import com.sun.media.imageio.plugins.tiff._
+
 object OverlayImage extends LazyLogging {
 
   // Ultimatly load these from properties	
@@ -35,11 +37,14 @@ object OverlayImage extends LazyLogging {
    * Create new TIFFImage from BufferedImage using the original images resolution
    */
   def createTIFFImage(bi: BufferedImage, originalXResolution: Long, originalYResolution: Long): TIFFImage = {
-    val ifd = TIFFImage.createIfd(bi)
-    TIFFImage.addSoftwareTag(ifd)
-    TIFFImage.addXResolutionTag(ifd, originalXResolution)
-    TIFFImage.addYResolutionTag(ifd, originalYResolution)
-    new TIFFImage(ifd, bi)
+    val softwareTagFunc = TIFFImage.addSoftwareTag _
+    // partially applied functions that take TIFFDirectory
+    val xResolutionFunc = TIFFImage.addXResolutionTag(_: TIFFDirectory, originalXResolution)
+    val yResolutionFunc = TIFFImage.addYResolutionTag(_: TIFFDirectory, originalYResolution)
+    // Compose functions
+    val ifdFunc = softwareTagFunc compose xResolutionFunc compose yResolutionFunc
+
+    new TIFFImage(ifdFunc(TIFFImage.createIfd(bi)), bi)
   }
 
   /**

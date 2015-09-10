@@ -174,31 +174,34 @@ object TIFFImage extends LazyLogging {
   /**
    * Add the software tag to the IFD
    */
-  def addSoftwareTag(ifd: TIFFDirectory) {
-
+  def addSoftwareTag(ifd: TIFFDirectory): TIFFDirectory = {
+    val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
     val softwareField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_SOFTWARE),
       TIFFTag.TIFF_ASCII, 1, Array(SOFTWARE_TAG))
-    ifd.addTIFFField(softwareField)
+    newIfd.addTIFFField(softwareField)
+    newIfd
   }
 
   /**
    * Add the X Resolution tag to the IFD
    */
-  def addXResolutionTag(ifd: TIFFDirectory, resolution: Long) {
-
+  def addXResolutionTag(ifd: TIFFDirectory, resolution: Long): TIFFDirectory = {
+    val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
     val xResolutionField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_X_RESOLUTION),
       TIFFTag.TIFF_RATIONAL, 1, createResolutionArray(resolution))
-    ifd.addTIFFField(xResolutionField)
+    newIfd.addTIFFField(xResolutionField)
+    newIfd
   }
 
   /**
    * Add the Y Resolution tag to the IFD
    */
-  def addYResolutionTag(ifd: TIFFDirectory, resolution: Long) = {
-
+  def addYResolutionTag(ifd: TIFFDirectory, resolution: Long): TIFFDirectory = {
+    val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
     val yResolutionField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_Y_RESOLUTION),
       TIFFTag.TIFF_RATIONAL, 1, createResolutionArray(resolution))
-    ifd.addTIFFField(yResolutionField)
+    newIfd.addTIFFField(yResolutionField)
+    newIfd
   }
 
 }
