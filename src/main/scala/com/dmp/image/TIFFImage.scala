@@ -2,9 +2,10 @@ package com.dmp.image
 
 import scala.annotation.tailrec
 import scala.util.{ Try, Success, Failure }
+import scala.util.control.Exception._
 
 import javax.imageio._
-import java.io.{ File, InputStream }
+import java.io.{ Closeable, File, InputStream, OutputStream }
 import java.nio.file.{ Files, Path }
 import java.awt.image.BufferedImage
 import java.util.Locale
@@ -16,95 +17,37 @@ import com.typesafe.scalalogging.LazyLogging
 import com.typesafe.config._
 
 /**
- * Read both single and mutltipage TIFF files
- *
- * ToDo - Add mthods to load the TIFF from an InputStream in addition to a file
+ * Read and write both single and mutltipage TIFF images
  */
 object TIFFImage extends LazyLogging {
 
   val SOFTWARE_TAG = "DMP_IMAGE_OPS"
 
-  def apply(file: File): List[TIFFImage] = fromFile(file)
-
-  def fromFile(file: File): List[TIFFImage] = {
-    fromPath(file.toPath)
-  }
+  def fromFile(file: File): List[TIFFImage] = fromPath(file.toPath)
 
   def fromPath(path: Path): List[TIFFImage] = fromStream(Files.newInputStream(path))
 
-  /**
-   *  Try catch is used to handle exceptions thrown by Java api.  Also, finally properly closes resouces.
-   */
   def fromStream(is: InputStream): List[TIFFImage] = {
-    try {
-      val iis = ImageIO.createImageInputStream(is)
-      val reader = new TIFFImageReader(new TIFFImageReaderSpi())
-
-      try {
-        reader.setInput(iis, false, false)
-
-        readImages(reader, reader.getNumImages(true))
-
-      } catch {
-        case e: Exception => logger.warn(e.getMessage); Nil
-      } finally {
-        reader.dispose
-        iis.close
+    Try(read(is)) match {
+      case Failure(thrown) => {
+        logger.warn("Failed reading from stream: " + thrown)
+        Nil
       }
-
-    } catch {
-      case e: Exception => logger.warn(e.getMessage); Nil
+      case Success(s) => s
     }
   }
 
-  /**
-   * Helper method to recurisvily read all images in TIFF
-   */
-  private def readImages(reader: TIFFImageReader, totalImages: Int): List[TIFFImage] = {
-    @tailrec
-    def read(currentImage: Int, accu: List[TIFFImage]): List[TIFFImage] = currentImage < totalImages match {
-      case true => {
-        val ifd = TIFFDirectory.createFromMetadata(reader.getImageMetadata(currentImage))
-        val bi = reader.read(0, reader.getDefaultReadParam)
-        read(currentImage + 1, new TIFFImage(ifd, bi) :: accu)
+  def toFile(file: File, images: List[TIFFImage]): Boolean = toPath(file.toPath, images)
+
+  def toPath(path: Path, images: List[TIFFImage]): Boolean = toStream(Files.newOutputStream(path), images)
+
+  def toStream(os: OutputStream, images: List[TIFFImage]): Boolean = {
+    Try(write(os, images)) match {
+      case Failure(thrown) => {
+        logger.warn("Failed writing to stream: " + thrown)
+        false
       }
-      case false => {
-        accu
-      }
-    }
-
-    read(0, Nil).reverse
-  }
-
-  /**
-   *  Try catch is used to handle exceptions thrown by Java api.  Also, finally properly closes resouces.
-   */
-  def toFile(file: File, images: List[TIFFImage]): Boolean = {
-    try {
-      val ios = ImageIO.createImageOutputStream(Files.newOutputStream(file.toPath))
-      val writer = new TIFFImageWriter(new TIFFImageWriterSpi())
-      val writeParam = new TIFFImageWriteParam(Locale.getDefault)
-      writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT)
-      // Set the Compressor from the properties file
-      writeParam.setCompressionType("CCITT T.6") //new TIFFT6Compressor().getCompressionType)
-
-      try {
-        writer.setOutput(ios)
-        writer.prepareWriteSequence(new TIFFStreamMetadata)
-        images map (x => writer.writeToSequence(new IIOImage(x.bi, null, x.ifd.getAsMetadata), writeParam))
-        writer.endWriteSequence
-        ios.flush
-        true
-
-      } catch {
-        case e: Exception => logger.warn(e.getMessage); false
-      } finally {
-        writer.dispose
-        ios.close
-      }
-
-    } catch {
-      case e: Exception => logger.warn(e.getMessage); false
+      case Success(s) => true
     }
   }
 
@@ -120,51 +63,6 @@ object TIFFImage extends LazyLogging {
    */
   def getIntTIFFTagValue(tiffDirectory: TIFFDirectory, tag: Int): Option[Int] = {
     TIFFTagIntValue(TIFFFieldValue(tiffDirectory, tag))
-  }
-  /**
-   * Read TIFF Field
-   *
-   * Try is used becuase there is no garantee the tag exists
-   */
-  private def TIFFFieldValue(tiffDirectory: TIFFDirectory, tag: Int): Try[TIFFField] = {
-
-    def TIFFField(ifd: TIFFDirectory, tag: Int) = ifd.getTIFFField(tag)
-
-    for {
-      tagValue <- Try(TIFFField(tiffDirectory, tag))
-    } yield tagValue
-  }
-
-  /**
-   * Retrieve TIFF Tag value as long from TIFField
-   */
-  private def TIFFTagLongValue(tiffField: Try[TIFFField]): Option[Long] = tiffField map (_.getAsLong(0)) match {
-    case Failure(thrown) => {
-      logger.warn("Failure: " + thrown)
-      None
-    }
-    case Success(s) => Some(s)
-  }
-
-  /**
-   * Retrieve TIFF Tag value as int from TIFField
-   */
-  private def TIFFTagIntValue(tiffField: Try[TIFFField]): Option[Int] = tiffField map (_.getAsInt(0)) match {
-    case Failure(thrown) => {
-      logger.warn("Failure: " + thrown)
-      None
-    }
-    case Success(s) => Some(s)
-  }
-
-  /**
-   * Multi dimensional array representing the resolution TIFF tag
-   */
-  private def createResolutionArray(resolution: Long): Array[Array[Long]] = {
-    val array = Array.ofDim[Long](1, 2)
-    array(0)(0) = resolution
-    array(0)(1) = 1
-    array
   }
 
   /**
@@ -211,6 +109,105 @@ object TIFFImage extends LazyLogging {
     newIfd
   }
 
+  /**
+   * Automatically close resources
+   */
+  private def withCloseable[T <: Closeable, R](t: T)(f: T => R): R = {
+    allCatch.andFinally { t.close } apply { f(t) }
+  }
+
+  /**
+   * Read TIFF image(s)
+   */
+  private def read(is: InputStream): List[TIFFImage] = {
+    withCloseable(ImageIO.createImageInputStream(is)) { iis =>
+      val reader = new TIFFImageReader(new TIFFImageReaderSpi())
+      reader.setInput(iis, false, false)
+      readImages(reader, reader.getNumImages(true))
+    }
+  }
+
+  /**
+   * Write TIFF image(s)
+   */
+  private def write(os: OutputStream, images: List[TIFFImage]) {
+    withCloseable(ImageIO.createImageOutputStream(os)) { ios =>
+      val writer = new TIFFImageWriter(new TIFFImageWriterSpi())
+      val writeParam = new TIFFImageWriteParam(Locale.getDefault)
+      writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT)
+      // Set the Compressor from the properties file
+      writeParam.setCompressionType("CCITT T.6") //new TIFFT6Compressor().getCompressionType)
+      writer.setOutput(ios)
+      writer.prepareWriteSequence(new TIFFStreamMetadata)
+      images map (x => writer.writeToSequence(new IIOImage(x.bi, null, x.ifd.getAsMetadata), writeParam))
+      writer.endWriteSequence
+    }
+  }
+
+  /**
+   * Helper to recurisvily read all images in TIFF
+   */
+  private def readImages(reader: TIFFImageReader, totalImages: Int): List[TIFFImage] = {
+    @tailrec
+    def read(currentImage: Int, accu: List[TIFFImage]): List[TIFFImage] = currentImage < totalImages match {
+      case true => {
+        val ifd = TIFFDirectory.createFromMetadata(reader.getImageMetadata(currentImage))
+        val bi = reader.read(0, reader.getDefaultReadParam)
+        read(currentImage + 1, new TIFFImage(ifd, bi) :: accu)
+      }
+      case false => {
+        accu
+      }
+    }
+
+    read(0, Nil).reverse
+  }
+
+  /**
+   * Read TIFF Field
+   *
+   * Try is used becuase there is no garantee the tag exists
+   */
+  private def TIFFFieldValue(tiffDirectory: TIFFDirectory, tag: Int): Try[TIFFField] = {
+
+    def TIFFField(ifd: TIFFDirectory, tag: Int) = ifd.getTIFFField(tag)
+
+    for {
+      tagValue <- Try(TIFFField(tiffDirectory, tag))
+    } yield tagValue
+  }
+
+  /**
+   * Retrieve TIFF Tag value as long from TIFField
+   */
+  private def TIFFTagLongValue(tiffField: Try[TIFFField]): Option[Long] = tiffField map (_.getAsLong(0)) match {
+    case Failure(thrown) => {
+      logger.debug("Failed reading long TIFF Tag: " + thrown)
+      None
+    }
+    case Success(s) => Some(s)
+  }
+
+  /**
+   * Retrieve TIFF Tag value as int from TIFField
+   */
+  private def TIFFTagIntValue(tiffField: Try[TIFFField]): Option[Int] = tiffField map (_.getAsInt(0)) match {
+    case Failure(thrown) => {
+      logger.debug("Failed reading int TIFF Tag: " + thrown)
+      None
+    }
+    case Success(s) => Some(s)
+  }
+
+  /**
+   * Multi dimensional array representing the resolution TIFF tag
+   */
+  private def createResolutionArray(resolution: Long): Array[Array[Long]] = {
+    val array = Array.ofDim[Long](1, 2)
+    array(0)(0) = resolution
+    array(0)(1) = 1
+    array
+  }
 }
 
 /**
