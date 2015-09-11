@@ -42,9 +42,9 @@ object OverlayImage extends LazyLogging {
     val xResolutionFunc = TIFFImage.addXResolutionTag(_: TIFFDirectory, originalXResolution)
     val yResolutionFunc = TIFFImage.addYResolutionTag(_: TIFFDirectory, originalYResolution)
     // Compose functions
-    val ifdFunc = softwareTagFunc compose xResolutionFunc compose yResolutionFunc
+    val ifdTransformFunc = softwareTagFunc compose xResolutionFunc compose yResolutionFunc
 
-    new TIFFImage(ifdFunc(TIFFImage.createIfd(bi)), bi)
+    new TIFFImage(ifdTransformFunc(TIFFImage.createIfd(bi)), bi)
   }
 
   /**

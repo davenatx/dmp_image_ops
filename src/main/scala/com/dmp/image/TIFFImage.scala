@@ -26,12 +26,18 @@ object TIFFImage extends LazyLogging {
 
   def apply(file: File): List[TIFFImage] = fromFile(file)
 
+  def fromFile(file: File): List[TIFFImage] = {
+    fromPath(file.toPath)
+  }
+
+  def fromPath(path: Path): List[TIFFImage] = fromStream(Files.newInputStream(path))
+
   /**
    *  Try catch is used to handle exceptions thrown by Java api.  Also, finally properly closes resouces.
    */
-  def fromFile(file: File): List[TIFFImage] = {
+  def fromStream(is: InputStream): List[TIFFImage] = {
     try {
-      val iis = ImageIO.createImageInputStream(Files.newInputStream(file.toPath))
+      val iis = ImageIO.createImageInputStream(is)
       val reader = new TIFFImageReader(new TIFFImageReaderSpi())
 
       try {
@@ -79,7 +85,8 @@ object TIFFImage extends LazyLogging {
       val writer = new TIFFImageWriter(new TIFFImageWriterSpi())
       val writeParam = new TIFFImageWriteParam(Locale.getDefault)
       writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT)
-      writeParam.setCompressionType(new TIFFT6Compressor().getCompressionType)
+      // Set the Compressor from the properties file
+      writeParam.setCompressionType("CCITT T.6") //new TIFFT6Compressor().getCompressionType)
 
       try {
         writer.setOutput(ios)
