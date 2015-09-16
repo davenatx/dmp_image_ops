@@ -48,9 +48,9 @@ object OverlayImage extends LazyLogging {
 }
 
 object Overlay extends App with LazyLogging {
-  val image = TIFFImage.fromFile(new File("sample_images/62135.001"))
+  val image = TIFFImage.fromFile(new File("C:/Users/david/ScalaProjects/dmp_image_ops/src/test/resources/overlay.tif"))
   logger.info("Current Image: " + image.head)
   val newImage = OverlayImage.overlay(image.head, 3568, 5536)
   logger.info("New Image:" + newImage)
-  TIFFImage.toFile(new File("sample_images/new-image.TIF"), List(newImage))
+  TIFFImage.toFile(new File("C:/Users/david/ScalaProjects/dmp_image_ops/src/test/resources/new_overlay.tif"), List(newImage))
 }
