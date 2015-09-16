@@ -11,18 +11,14 @@ import com.sun.media.imageio.plugins.tiff._
 
 object OverlayImage extends LazyLogging {
 
-  // Load these from properties	
-  val IMAGE_WIDTH = 3568
-  val IMAGE_LENGTH = 5536
-  val IMAGE_TYPE = BufferedImage.TYPE_BYTE_BINARY
-  val DEFAULT_X_RESOLUTION = 200
-  val DEFAULT_Y_RESOLUTION = 200
-
-  def createNewImage(bi: BufferedImage): BufferedImage = {
-    val newBi = new BufferedImage(IMAGE_WIDTH, IMAGE_LENGTH, IMAGE_TYPE)
+  /**
+   * Create the new image and overlay the existing buffered image on it
+   */
+  def createNewImage(bi: BufferedImage, imageWidth: Int, imageLength: Int): BufferedImage = {
+    val newBi = new BufferedImage(imageWidth, imageLength, overlayImageType)
     val g = newBi.getGraphics
     g.setColor(Color.white)
-    g.fillRect(0, 0, IMAGE_WIDTH, IMAGE_LENGTH)
+    g.fillRect(0, 0, imageWidth, imageLength)
     g.drawImage(bi, 0, 0, null)
     g.dispose
     newBi
@@ -45,16 +41,16 @@ object OverlayImage extends LazyLogging {
   /**
    * Overlay the old image on a new image.
    */
-  def overlay(image: TIFFImage): TIFFImage = {
-    val bi = createNewImage(image.bi)
-    createTIFFImage(bi, image.xResolution.getOrElse(DEFAULT_X_RESOLUTION), image.yResolution.getOrElse(DEFAULT_Y_RESOLUTION))
+  def overlay(image: TIFFImage, imageWidth: Int, imageLength: Int): TIFFImage = {
+    val bi = createNewImage(image.bi, imageWidth, imageLength)
+    createTIFFImage(bi, image.xResolution.getOrElse(defaultXResolution), image.yResolution.getOrElse(defaultYResolution))
   }
 }
 
 object Overlay extends App with LazyLogging {
   val image = TIFFImage.fromFile(new File("sample_images/62135.001"))
   logger.info("Current Image: " + image.head)
-  val newImage = OverlayImage.overlay(image.head)
+  val newImage = OverlayImage.overlay(image.head, 3568, 5536)
   logger.info("New Image:" + newImage)
   TIFFImage.toFile(new File("sample_images/new-image.TIF"), List(newImage))
 }

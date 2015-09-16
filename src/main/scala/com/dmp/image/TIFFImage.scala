@@ -21,8 +21,6 @@ import com.typesafe.config._
  */
 object TIFFImage extends LazyLogging {
 
-  val SOFTWARE_TAG = "DMP_IMAGE_OPS"
-
   def fromFile(file: File): List[TIFFImage] = fromPath(file.toPath)
 
   def fromPath(path: Path): List[TIFFImage] = fromStream(Files.newInputStream(path))
@@ -82,7 +80,7 @@ object TIFFImage extends LazyLogging {
   def addSoftwareTag(ifd: TIFFDirectory): TIFFDirectory = {
     val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
     val softwareField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_SOFTWARE),
-      TIFFTag.TIFF_ASCII, 1, Array(SOFTWARE_TAG))
+      TIFFTag.TIFF_ASCII, 1, Array(softwareTag))
     newIfd.addTIFFField(softwareField)
     newIfd
   }
@@ -135,8 +133,7 @@ object TIFFImage extends LazyLogging {
       val writer = new TIFFImageWriter(new TIFFImageWriterSpi())
       val writeParam = new TIFFImageWriteParam(Locale.getDefault)
       writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT)
-      // Set the Compressor from the properties file
-      writeParam.setCompressionType("CCITT T.6") //new TIFFT6Compressor().getCompressionType)
+      writeParam.setCompressionType(compressionType)
       writer.setOutput(ios)
       writer.prepareWriteSequence(new TIFFStreamMetadata)
       images map (x => writer.writeToSequence(new IIOImage(x.bi, null, x.ifd.getAsMetadata), writeParam))
