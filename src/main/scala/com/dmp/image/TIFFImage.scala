@@ -108,6 +108,21 @@ object TIFFImage extends LazyLogging {
   }
 
   /**
+   * Add the Resolution Unit tag to the IFD
+   *
+   * RESUNIT_NONE = 1
+   * RESUNIT_INCH = 2
+   * RESUNIT_CENTIMETER = 3
+   */
+  def addResolutionUnitTag(ifd: TIFFDirectory): TIFFDirectory = {
+    val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
+    val resolutionUnitField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_RESOLUTION_UNIT),
+      TIFFTag.TIFF_SHORT, 1, Array[Char](2))
+    newIfd.addTIFFField(resolutionUnitField)
+    newIfd
+  }
+
+  /**
    * Automatically close resources
    */
   private def withCloseable[T <: Closeable, R](t: T)(f: T => R): R = {
@@ -228,9 +243,13 @@ case class TIFFImage(ifd: TIFFDirectory, bi: BufferedImage) extends LazyLogging 
 
   def fillOrder: Option[Int] = getIntTIFFTagValue(ifd, BaselineTIFFTagSet.TAG_FILL_ORDER)
 
+  def stripOffsets: Option[Long] = getLongTIFFTagValue(ifd, BaselineTIFFTagSet.TAG_STRIP_OFFSETS)
+
   def samplesPerPixel: Option[Int] = getIntTIFFTagValue(ifd, BaselineTIFFTagSet.TAG_SAMPLES_PER_PIXEL)
 
   def rowsPerStrip: Option[Long] = getLongTIFFTagValue(ifd, BaselineTIFFTagSet.TAG_ROWS_PER_STRIP)
+
+  def stripByteCounts: Option[Long] = getLongTIFFTagValue(ifd, BaselineTIFFTagSet.TAG_STRIP_BYTE_COUNTS)
 
   def xResolution: Option[Long] = getLongTIFFTagValue(ifd, BaselineTIFFTagSet.TAG_X_RESOLUTION)
 
@@ -241,6 +260,7 @@ case class TIFFImage(ifd: TIFFDirectory, bi: BufferedImage) extends LazyLogging 
       ", BitsPerSample: " + bitsPerSample.getOrElse("") + ", Compression: " + compression.getOrElse("") +
       ", PhotometricInterpretation: " + photometricInterpretation.getOrElse("") + ", FillOrder: " + fillOrder.getOrElse("") +
       ", SamplesPerPixel: " + samplesPerPixel.getOrElse("") + ", RowsPerStrip: " + rowsPerStrip.getOrElse("") +
-      ", XResolution: " + xResolution.getOrElse("") + ", YResolution: " + yResolution.getOrElse("")
+      ", XResolution: " + xResolution.getOrElse("") + ", YResolution: " + yResolution.getOrElse("") +
+      ", StripOffsets: " + stripOffsets.getOrElse("") + ", StripByteCounts: " + stripByteCounts.getOrElse("")
   }
 }
