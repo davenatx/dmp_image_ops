@@ -110,14 +110,12 @@ object TIFFImage extends LazyLogging {
   /**
    * Add the Resolution Unit tag to the IFD
    *
-   * RESUNIT_NONE = 1
-   * RESUNIT_INCH = 2
-   * RESUNIT_CENTIMETER = 3
+   * The value is loaded form the properties file
    */
   def addResolutionUnitTag(ifd: TIFFDirectory): TIFFDirectory = {
     val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
     val resolutionUnitField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_RESOLUTION_UNIT),
-      TIFFTag.TIFF_SHORT, 1, Array[Char](2))
+      TIFFTag.TIFF_SHORT, 1, Array[Char](resolutionUnit.asInstanceOf[Char]))
     newIfd.addTIFFField(resolutionUnitField)
     newIfd
   }
@@ -259,8 +257,9 @@ case class TIFFImage(ifd: TIFFDirectory, bi: BufferedImage) extends LazyLogging 
     "ImageWidth: " + imageWidth.getOrElse("") + ", ImageLength: " + imageLength.getOrElse("") +
       ", BitsPerSample: " + bitsPerSample.getOrElse("") + ", Compression: " + compression.getOrElse("") +
       ", PhotometricInterpretation: " + photometricInterpretation.getOrElse("") + ", FillOrder: " + fillOrder.getOrElse("") +
-      ", SamplesPerPixel: " + samplesPerPixel.getOrElse("") + ", RowsPerStrip: " + rowsPerStrip.getOrElse("") +
-      ", XResolution: " + xResolution.getOrElse("") + ", YResolution: " + yResolution.getOrElse("") +
-      ", StripOffsets: " + stripOffsets.getOrElse("") + ", StripByteCounts: " + stripByteCounts.getOrElse("")
+      ", StripOffsets: " + stripOffsets.getOrElse("") + ", SamplesPerPixel: " + samplesPerPixel.getOrElse("") +
+      ", RowsPerStrip: " + rowsPerStrip.getOrElse("") + ", StripByteCounts: " + stripByteCounts.getOrElse("") +
+      ", XResolution: " + xResolution.getOrElse("") + ", YResolution: " + yResolution.getOrElse("")
+
   }
 }

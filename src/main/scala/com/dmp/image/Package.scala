@@ -9,5 +9,6 @@ package object image {
   lazy val defaultYResolution = config.getInt("defaultYResolution")
   lazy val overlayImageType = config.getInt("overlayImageType")
   lazy val compressionType = config.getString("compressionType")
+  lazy val resolutionUnit = config.getInt("resolutionUnit")
   lazy val softwareTag = config.getString("softwareTag")
 }
