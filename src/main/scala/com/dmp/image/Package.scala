@@ -3,7 +3,7 @@ package com.dmp
 import com.typesafe.config.ConfigFactory
 
 package object image {
-  private val config = ConfigFactory.load("settings.properties")
+  private val config = ConfigFactory.load("dmp_image_ops.conf")
 
   lazy val defaultXResolution = config.getInt("defaultXResolution")
   lazy val defaultYResolution = config.getInt("defaultYResolution")

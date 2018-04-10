@@ -4,7 +4,7 @@ name := "dmp_image_ops"
 
 organization := "com.dmp"
 
-version := "0.3"
+version := "0.4"
 
 scalaVersion := "2.11.12"
 
