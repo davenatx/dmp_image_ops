@@ -75,7 +75,7 @@ object RGBtoBilevel extends LazyLogging {
     pb.addSource(bi)
         
     val cm = new ComponentColorModel(
-      ColorSpace.getInstance(ColorSpace.CS_GRAY),new Array[Int](8),
+      ColorSpace.getInstance(ColorSpace.CS_GRAY),Array[Int](8),
       false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE
     )
     
@@ -100,7 +100,7 @@ object RGBtoBilevel extends LazyLogging {
    */
   private def orderedDither(bi: BufferedImage): BufferedImage = {
     /* Color cube for 8 color gray scale image */
-    val colorMap = ColorCube.createColorCube(DataBuffer.TYPE_BYTE, 0, new Array[Int](2))
+    val colorMap = ColorCube.createColorCube(DataBuffer.TYPE_BYTE, 0, Array[Int](2))
 
     /* Set the dither mask to the pre-defined 4x4x1 mask */
     val ditherMask = KernelJAI.DITHER_MASK_441
@@ -123,11 +123,34 @@ object RGBtoBilevel extends LazyLogging {
     pi.getAsBufferedImage      
   }
 
+    /**
+     * Perform error diffusion dither on a gray image to convert it to
+     * 1 bit slower than ordered dither
+     */
+    private def errorDiffusionDither(bi: BufferedImage): BufferedImage = {
+      val pb = new ParameterBlock()
+      pb.addSource(bi)
+      val lookupTable = new LookupTableJAI(Array[Byte](0x00.toByte, 0xff.toByte))
+      pb.add(lookupTable)
+      pb.add(KernelJAI.ERROR_FILTER_FLOYD_STEINBERG)
+        
+      val layout = new ImageLayout
+      val map = Array[Byte](0x00.toByte, 0xff.toByte)
+      val cm = new IndexColorModel(1, 2, map, map, map);
+      layout.setColorModel(cm)
+        
+      // Create a hint containing the layout.
+      val rh = new RenderingHints(JAI.KEY_IMAGE_LAYOUT, layout)
+      // Dither the image.
+      val pi = JAI.create("ErrorDiffusion", pb, rh)
+      pi.getAsBufferedImage
+    }
+
   /**
    * Convert an RGB image to Bilevel by converting to grayscale and then performing an
    * ordered dither
    */
   def convert(bi: BufferedImage): BufferedImage = {
-    orderedDither(toGrayscale(bi))
+    errorDiffusionDither(toGrayscale(bi))
   }
 }
