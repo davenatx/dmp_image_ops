@@ -4,13 +4,13 @@ name := "dmp_image_ops"
 
 organization := "com.dmp"
 
-version := "0.4"
+version := "0.5"
 
 scalaVersion := "2.11.12"
 
 scalacOptions ++= Seq("-optimize", "-deprecation", "-feature")
 
-resolvers ++= Seq("Github Repo" at "http://davenatx.github.io/maven")
+resolvers += "DMP's Gitub Repo" at "http://davenatx.github.io/maven"
 
 libraryDependencies ++= Dependencies.imageOps
 
