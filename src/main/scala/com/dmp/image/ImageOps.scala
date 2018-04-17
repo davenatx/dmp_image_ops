@@ -17,6 +17,8 @@ import javax.media.jai.LookupTableJAI
 import javax.media.jai.KernelJAI
 import javax.media.jai.ImageLayout
 import javax.media.jai.ColorCube
+import javax.media.jai.operator.BinarizeDescriptor
+import javax.media.jai.Histogram
 
 import com.sun.media.imageio.plugins.tiff._
 
@@ -66,10 +68,15 @@ object OverlayImage extends LazyLogging {
 }
 
 /**
- * Convert an RGB Image to Bilevel.
+ * Image Operations
+ *
+ * Presently this is used to convert RGB or Grayscale images to binary
  */
-object RGBtoBilevel extends LazyLogging {
+object ImageOps extends LazyLogging {
 
+  /**
+   * Use JAI Color Converter to convert image to grayscale
+   */
   private def toGrayscale(bi: BufferedImage): BufferedImage = {
     val pb = new ParameterBlock
     pb.addSource(bi)
@@ -95,12 +102,25 @@ object RGBtoBilevel extends LazyLogging {
   }
 
   /**
-   * Ordered Dither to convert gray image to bi-level.  It's much faster than
-   * error diffusion however it does create slightly larger files.
+   * Use JAI BandCombine to convert to grayscale
+   */
+  private def toGray(bi: BufferedImage): BufferedImage = {
+    val matrix = Array(Array(0.114D, 0.587D, 0.299D, 0.0D))
+
+    val pb = new ParameterBlock
+    pb.addSource(bi)
+    pb.add(matrix)
+
+    val pi = JAI.create("BandCombine", pb, null)
+    pi.getAsBufferedImage
+  }
+
+  /**
+   * User Ordered Dither on a gray image to convert it to binary
    */
   private def orderedDither(bi: BufferedImage): BufferedImage = {
     /* Color cube for 8 color gray scale image */
-    val colorMap = ColorCube.createColorCube(DataBuffer.TYPE_BYTE, 0, Array[Int](2))
+    val colorMap = ColorCube.createColorCube(bi.getRaster.getDataBuffer.getDataType, 0, Array[Int](2))
 
     /* Set the dither mask to the pre-defined 4x4x1 mask */
     val ditherMask = KernelJAI.DITHER_MASK_441
@@ -123,17 +143,17 @@ object RGBtoBilevel extends LazyLogging {
     pi.getAsBufferedImage      
   }
 
-    /**
-     * Perform error diffusion dither on a gray image to convert it to
-     * 1 bit slower than ordered dither
-     */
-    private def errorDiffusionDither(bi: BufferedImage): BufferedImage = {
+  /**
+    * User Error Diffusion Dither on a gray image to convert it to
+    * binary
+    */
+  private def errorDiffusionDither(bi: BufferedImage): BufferedImage = {
       val pb = new ParameterBlock()
       pb.addSource(bi)
       val lookupTable = new LookupTableJAI(Array[Byte](0x00.toByte, 0xff.toByte))
       pb.add(lookupTable)
       pb.add(KernelJAI.ERROR_FILTER_FLOYD_STEINBERG)
-        
+      
       val layout = new ImageLayout
       val map = Array[Byte](0x00.toByte, 0xff.toByte)
       val cm = new IndexColorModel(1, 2, map, map, map);
@@ -147,10 +167,28 @@ object RGBtoBilevel extends LazyLogging {
     }
 
   /**
-   * Convert an RGB image to Bilevel by converting to grayscale and then performing an
-   * ordered dither
+   * Use JAI Histogram to convert to binary
+   */ 
+  private def iterativeThreshold(bi: BufferedImage): BufferedImage = {
+    val pb = new ParameterBlock()
+    pb.addSource(bi)
+
+    val op = JAI.create("Histogram", pb, null).getProperty("histogram").asInstanceOf[Histogram]
+     val pi = BinarizeDescriptor.create(bi, op.getIterativeThreshold()(0), null).createInstance
+     pi.getAsBufferedImage
+  }
+
+  /**
+   * Convert an image to binary
+   *
+   * This first checks the bitsPerSample.  If it is greater than 8 (grayscale), the image is
+   * converted to grayscale then to binary.  Otherwise, the image is converted to binary.
    */
-  def convert(bi: BufferedImage): BufferedImage = {
-    errorDiffusionDither(toGrayscale(bi))
+  def toBinary(bi: BufferedImage): BufferedImage = {
+    /* Determine the bitsPerSample */
+    bi.getColorModel.getPixelSize match {
+      case bitsPerSample if bitsPerSample > 10 => orderedDither(toGrayscale(bi))
+      case _ => toGrayscale(bi)
+    }
   }
 }
