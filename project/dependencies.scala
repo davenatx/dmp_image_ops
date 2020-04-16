@@ -2,9 +2,9 @@ import sbt._
 import sbt.Keys._
 
 object Version {
-  val scalaLogging = "3.8.0"
+  val scalaLogging = "3.9.2"
   val logback      = "1.2.3"
-  val config       = "1.3.3"
+  val config       = "1.4.0"
   val jaiImageio   = "1.2-pre-dr-b04-2012-05-17"
   val specs2       = "4.0.3"
 }

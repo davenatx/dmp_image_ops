@@ -1,1 +1,1 @@
-addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.6") //Task dependency-updates
+addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.5.0") //Task dependency-updates

@@ -4,11 +4,11 @@ name := "dmp_image_ops"
 
 organization := "com.dmp"
 
-version := "0.5"
+version := "0.6"
 
-scalaVersion := "2.11.12"
+scalaVersion := "2.12.11"
 
-scalacOptions ++= Seq("-optimize", "-deprecation", "-feature")
+scalacOptions ++= Seq("-deprecation", "-feature")
 
 resolvers += "DMP's Gitub Repo" at "http://davenatx.github.io/maven"
 
