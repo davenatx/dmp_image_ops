@@ -188,7 +188,7 @@ object ImageOps extends LazyLogging {
     /* Determine the bitsPerSample */
     bi.getColorModel.getPixelSize match {
       case bitsPerSample if bitsPerSample > 10 => orderedDither(toGrayscale(bi))
-      case _ => toGrayscale(bi)
+      case _ => toGray(bi)
     }
   }
 }
