@@ -80,21 +80,21 @@ object ImageOps extends LazyLogging {
   private def toGrayscale(bi: BufferedImage): BufferedImage = {
     val pb = new ParameterBlock
     pb.addSource(bi)
-        
+
     val cm = new ComponentColorModel(
-      ColorSpace.getInstance(ColorSpace.CS_GRAY),Array[Int](8),
+      ColorSpace.getInstance(ColorSpace.CS_GRAY), Array[Int](8),
       false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE
     )
-    
+
     pb.add(cm)
 
     /* Create hints with desired ColorModel and derived SampleModel */
     val layout = new ImageLayout();
     layout.setColorModel(cm);
     layout.setSampleModel(
-      cm.createCompatibleSampleModel(bi.getWidth,bi.getHeight)
+      cm.createCompatibleSampleModel(bi.getWidth, bi.getHeight)
     )
-    
+
     val rh = new RenderingHints(JAI.KEY_IMAGE_LAYOUT, layout)
 
     val pi = JAI.create("ColorConvert", pb, rh)
@@ -140,42 +140,42 @@ object ImageOps extends LazyLogging {
 
     /* Create the ordered dither OpImage */
     val pi = JAI.create("OrderedDither", pb, rh)
-    pi.getAsBufferedImage      
+    pi.getAsBufferedImage
   }
 
   /**
-    * User Error Diffusion Dither on a gray image to convert it to
-    * binary
-    */
+   * User Error Diffusion Dither on a gray image to convert it to
+   * binary
+   */
   private def errorDiffusionDither(bi: BufferedImage): BufferedImage = {
-      val pb = new ParameterBlock()
-      pb.addSource(bi)
-      val lookupTable = new LookupTableJAI(Array[Byte](0x00.toByte, 0xff.toByte))
-      pb.add(lookupTable)
-      pb.add(KernelJAI.ERROR_FILTER_FLOYD_STEINBERG)
-      
-      val layout = new ImageLayout
-      val map = Array[Byte](0x00.toByte, 0xff.toByte)
-      val cm = new IndexColorModel(1, 2, map, map, map);
-      layout.setColorModel(cm)
-        
-      // Create a hint containing the layout.
-      val rh = new RenderingHints(JAI.KEY_IMAGE_LAYOUT, layout)
-      // Dither the image.
-      val pi = JAI.create("ErrorDiffusion", pb, rh)
-      pi.getAsBufferedImage
-    }
+    val pb = new ParameterBlock()
+    pb.addSource(bi)
+    val lookupTable = new LookupTableJAI(Array[Byte](0x00.toByte, 0xff.toByte))
+    pb.add(lookupTable)
+    pb.add(KernelJAI.ERROR_FILTER_FLOYD_STEINBERG)
+
+    val layout = new ImageLayout
+    val map = Array[Byte](0x00.toByte, 0xff.toByte)
+    val cm = new IndexColorModel(1, 2, map, map, map);
+    layout.setColorModel(cm)
+
+    // Create a hint containing the layout.
+    val rh = new RenderingHints(JAI.KEY_IMAGE_LAYOUT, layout)
+    // Dither the image.
+    val pi = JAI.create("ErrorDiffusion", pb, rh)
+    pi.getAsBufferedImage
+  }
 
   /**
    * Use JAI Histogram to convert to binary
-   */ 
+   */
   private def iterativeThreshold(bi: BufferedImage): BufferedImage = {
     val pb = new ParameterBlock()
     pb.addSource(bi)
 
     val op = JAI.create("Histogram", pb, null).getProperty("histogram").asInstanceOf[Histogram]
-     val pi = BinarizeDescriptor.create(bi, op.getIterativeThreshold()(0), null).createInstance
-     pi.getAsBufferedImage
+    val pi = BinarizeDescriptor.create(bi, op.getIterativeThreshold()(0), null).createInstance
+    pi.getAsBufferedImage
   }
 
   /**
@@ -187,8 +187,8 @@ object ImageOps extends LazyLogging {
   def toBinary(bi: BufferedImage): BufferedImage = {
     /* Determine the bitsPerSample */
     bi.getColorModel.getPixelSize match {
-      case bitsPerSample if bitsPerSample > 10 => orderedDither(toGrayscale(bi))
-      case _ => toGray(bi)
+      case bitsPerSample if bitsPerSample > 10 => iterativeThreshold(bi) //orderedDither(toGrayscale(bi))
+      case _                                   => iterativeThreshold(bi) //toGrayscale(bi)
     }
   }
 }

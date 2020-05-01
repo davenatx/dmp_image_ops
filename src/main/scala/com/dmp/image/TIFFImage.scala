@@ -79,7 +79,8 @@ object TIFFImage extends LazyLogging {
    */
   def addSoftwareTag(ifd: TIFFDirectory): TIFFDirectory = {
     val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
-    val softwareField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_SOFTWARE),
+    val softwareField = new TIFFField(
+      BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_SOFTWARE),
       TIFFTag.TIFF_ASCII, 1, Array(softwareTag))
     newIfd.addTIFFField(softwareField)
     newIfd
@@ -90,7 +91,8 @@ object TIFFImage extends LazyLogging {
    */
   def addXResolutionTag(ifd: TIFFDirectory, resolution: Long): TIFFDirectory = {
     val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
-    val xResolutionField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_X_RESOLUTION),
+    val xResolutionField = new TIFFField(
+      BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_X_RESOLUTION),
       TIFFTag.TIFF_RATIONAL, 1, createResolutionArray(resolution))
     newIfd.addTIFFField(xResolutionField)
     newIfd
@@ -101,7 +103,8 @@ object TIFFImage extends LazyLogging {
    */
   def addYResolutionTag(ifd: TIFFDirectory, resolution: Long): TIFFDirectory = {
     val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
-    val yResolutionField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_Y_RESOLUTION),
+    val yResolutionField = new TIFFField(
+      BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_Y_RESOLUTION),
       TIFFTag.TIFF_RATIONAL, 1, createResolutionArray(resolution))
     newIfd.addTIFFField(yResolutionField)
     newIfd
@@ -114,7 +117,8 @@ object TIFFImage extends LazyLogging {
    */
   def addResolutionUnitTag(ifd: TIFFDirectory): TIFFDirectory = {
     val newIfd = ifd.clone.asInstanceOf[TIFFDirectory]
-    val resolutionUnitField = new TIFFField(BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_RESOLUTION_UNIT),
+    val resolutionUnitField = new TIFFField(
+      BaselineTIFFTagSet.getInstance.getTag(BaselineTIFFTagSet.TAG_RESOLUTION_UNIT),
       TIFFTag.TIFF_SHORT, 1, Array[Char](resolutionUnit.asInstanceOf[Char]))
     newIfd.addTIFFField(resolutionUnitField)
     newIfd

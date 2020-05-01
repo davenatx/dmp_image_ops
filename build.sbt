@@ -1,4 +1,5 @@
 import Dependencies._
+import scalariform.formatter.preferences._
 
 name := "dmp_image_ops"
 
@@ -19,3 +20,8 @@ git.baseVersion := "1.0"
 //versionWithGit
 
 showCurrentGitBranch
+
+scalariformPreferences := scalariformPreferences.value
+    .setPreference(AlignSingleLineCaseStatements, true)
+    .setPreference(DoubleIndentConstructorArguments, true)
+    .setPreference(DanglingCloseParenthesis, Preserve)
