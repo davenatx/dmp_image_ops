@@ -45,7 +45,7 @@ object ToBinary extends App with LazyLogging {
       case List() =>
       case head :: tail => {
         logger.info("Processing File: " + head)
-        val newFile = new File("C:/Users/dprice/desktop/EP Temp/new/" + head.getName)
+        val newFile = new File("C:/Users/dprice/desktop/KF Temp/new/" + head.getName)
         convert(head, newFile)
         process(tail)
       }
@@ -54,7 +54,7 @@ object ToBinary extends App with LazyLogging {
     process(files)
   }
 
-  val dir = new File("C:/Users/dprice/desktop/EP Temp/old")
-  logger.info("Preparing to Procoess Files: " + dir.listFiles.toList)
+  val dir = new File("C:/Users/dprice/desktop/KF Temp/old")
+  logger.info("Preparing to Process Files: " + dir.listFiles.toList)
   processImages(dir.listFiles.toList)
 }

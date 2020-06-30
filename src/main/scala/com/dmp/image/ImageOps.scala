@@ -178,17 +178,12 @@ object ImageOps extends LazyLogging {
     pi.getAsBufferedImage
   }
 
-  /**
-   * Convert an image to binary
-   *
-   * This first checks the bitsPerSample.  If it is greater than 8 (grayscale), the image is
-   * converted to grayscale then to binary.  Otherwise, the image is converted to binary.
-   */
   def toBinary(bi: BufferedImage): BufferedImage = {
     /* Determine the bitsPerSample */
     bi.getColorModel.getPixelSize match {
-      case bitsPerSample if bitsPerSample > 10 => iterativeThreshold(bi) //orderedDither(toGrayscale(bi))
-      case _                                   => iterativeThreshold(bi) //toGrayscale(bi)
+      //case bitsPerSample if bitsPerSample > 8 => orderedDither(toGrayscale(bi)) //iterativeThreshold(bi) //orderedDither(toGrayscale(bi))
+      case bitsPerSample if bitsPerSample > 1 => iterativeThreshold(bi) //toGrayscale(bi)
+      case _                                  => bi
     }
   }
 }
